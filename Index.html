@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Check-in App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+        }
+        #search-container {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        #search {
+            flex-grow: 1;
+            padding: 10px;
+            font-size: 16px;
+        }
+        #clear-search {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+        }
+        .attendee {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border: 1px solid #ccc;
+            margin-bottom: 10px;
+        }
+        .attendee-info {
+            flex-grow: 1;
+        }
+        .check-in-btn {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .checked-in {
+            background-color: #4CAF50;
+            color: white;
+        }
+        #download-csv {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #008CBA;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Event Check-in</h1>
+    <div id="search-container">
+        <input type="text" id="search" placeholder="Search attendees...">
+        <button id="clear-search">&times;</button>
+    </div>
+    <div id="attendees-list"></div>
+    <button id="download-csv">Download Checked-in List (CSV)</button>
+
+    <script>
+        const attendees = [
+            {firstName: "Sivakumar", lastName: "Gnanasambandam", mobile: "9849496358", pmiId: "755569"},
+            {firstName: "Madan Kumar", lastName: "Pernati", mobile: "8886110892", pmiId: "10382196"},
+            {firstName: "Aneel KumarReddy", lastName: "Nalamalpu", mobile: "7702777696", pmiId: "6000721"},
+            {firstName: "SriVinod", lastName: "Mula", mobile: "8978722779", pmiId: "5025245"},
+            {firstName: "RAVISAH", lastName: "PAWAR MANISAH", mobile: "7702349933", pmiId: "659956"},
+            {firstName: "Satish Kumar Reddy", lastName: "Byreddy", mobile: "8142000909", pmiId: "543948"},
+            {firstName: "Mallipudi", lastName: "Sailaja", mobile: "9030910080", pmiId: "6712243"},
+            {firstName: "Ravi Shankar Kumar", lastName: "Devaki", mobile: "8600991869", pmiId: "2110165"},
+            {firstName: "MEDSIETTI JAGANMOHAN", lastName: "RAO", mobile: "9677003779", pmiId: "9897464"},
+            {firstName: "VENKATA SAI SATEESH KUMAR", lastName: "TALUPURI", mobile: "7032917715", pmiId: "4177814"},
+            {firstName: "Venkata Kameshwar", lastName: "Peddada", mobile: "9701897170", pmiId: "2519907"},
+            {firstName: "karunakar", lastName: "tallada", mobile: "9036418480", pmiId: "10501691‎"},
+            {firstName: "Manasa", lastName: "Sanem", mobile: "9985350816", pmiId: "5492920"},
+            {firstName: "Pandhapully", lastName: "Sujeeth", mobile: "9959477716", pmiId: "3887088"},
+            {firstName: "Rajiv", lastName: "Chauhan", mobile: "9970007560", pmiId: "1134831"},
+            {firstName: "Syamala Bai", lastName: "Nalavatula", mobile: "8074042934", pmiId: "8075740"}
+        ];
+
+        attendees.sort((a, b) => a.firstName.localeCompare(b.firstName));
+
+        const attendeesList = document.getElementById('attendees-list');
+        const searchInput = document.getElementById('search');
+        const clearSearchBtn = document.getElementById('clear-search');
+        const downloadCsvBtn = document.getElementById('download-csv');
+
+        function renderAttendees(filteredAttendees = attendees) {
+            attendeesList.innerHTML = '';
+            filteredAttendees.forEach(attendee => {
+                const attendeeElement = document.createElement('div');
+                attendeeElement.className = 'attendee';
+                attendeeElement.innerHTML = `
+                    <div class="attendee-info">
+                        <strong>${attendee.firstName} ${attendee.lastName}</strong><br>
+                        Mobile: ${attendee.mobile}<br>
+                        PMI ID: ${attendee.pmiId}
+                    </div>
+                    <button class="check-in-btn" onclick="toggleCheckIn(this, '${attendee.pmiId}')">Check In</button>
+                `;
+                attendeesList.appendChild(attendeeElement);
+            });
+        }
+
+        function toggleCheckIn(button, pmiId) {
+            button.classList.toggle('checked-in');
+            if (button.classList.contains('checked-in')) {
+                button.textContent = 'Undo';
+            } else {
+                button.textContent = 'Check In';
+            }
+        }
+
+        function filterAttendees() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const filteredAttendees = attendees.filter(attendee => 
+                attendee.firstName.toLowerCase().includes(searchTerm) ||
+                attendee.lastName.toLowerCase().includes(searchTerm)
+            );
+            renderAttendees(filteredAttendees);
+        }
+
+        function clearSearch() {
+            searchInput.value = '';
+            renderAttendees();
+        }
+
+        function downloadCsv() {
+            const checkedInAttendees = Array.from(document.querySelectorAll('.checked-in'))
+                .map(button => {
+                    const attendeeDiv = button.closest('.attendee');
+                    const info = attendeeDiv.querySelector('.attendee-info').textContent.split('\n');
+                    const name = info[0].trim();
+                    const mobile = info[1].split(':')[1].trim();
+                    const pmiId = info[2].split(':')[1].trim();
+                    return `${name},${mobile},${pmiId}`;
+                });
+
+            const csvContent = "data:text/csv;charset=utf-8," 
+                + "Name,Mobile,PMI ID\n" 
+                + checkedInAttendees.join("\n");
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "checked_in_attendees.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        searchInput.addEventListener('input', filterAttendees);
+        clearSearchBtn.addEventListener('click', clearSearch);
+        downloadCsvBtn.addEventListener('click', downloadCsv);
+
+        renderAttendees();
+    </script>
+</body>
+</html>
